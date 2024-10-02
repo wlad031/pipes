@@ -1,0 +1,48 @@
+#file: noinspection SpringBootApplicationYaml
+server.port: ${SERVER_PORT:6969}
+spring:
+  application:
+    name: pipes
+  main:
+    allow-bean-definition-overriding: true
+    banner-mode: off
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    username: myhub
+    password: password
+    url: jdbc:postgresql://localhost:5432/myhub
+
+steps:
+  - name: ids/save
+    type: ids/save
+  - name: ids/lookup
+    type: ids/lookup
+    source-id-type: local-logseq
+  - name: sink/rest/wallabag
+    type: sink/rest
+    rest-url: http://localhost:6074/api/v1/bookmarks
+  - name: source/rest/logseq
+    type: source/rest
+    rest-url: http://localhost:6073/api/v1/bookmarks
+    rest-schedule:
+      type: interval
+      interval: 5s
+      window: 6s
+  - name: echo
+    type: echo
+  - name: read/json-file
+    type: read/json-file
+
+pipelines:
+  - name: pipeline/logseq-to-wallabag
+    steps:
+      - source/rest/logseq
+      - ids/lookup
+      - echo
+      - sink/rest/wallabag
+      - ids/save
+      - echo
+
+logging:
+  level:
+    dev.vgerasimov: debug
